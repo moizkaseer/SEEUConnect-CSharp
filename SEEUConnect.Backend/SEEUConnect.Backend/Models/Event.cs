@@ -20,8 +20,8 @@ namespace SEEUConnect.Backend.Models
 
         public DateTime Date { get; set; }
 
-        public string Tags { get; set; } = string.Empty;    
+        public string Tags { get; set; } = string.Empty;
 
-        public int Votes { get; set; } = 0;     
+        public int Votes { get; set; } = 0;
     }
 }

@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SEEUConnect.Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1c6b1e58e2af6ec8c5a3c3f48e56d64ba4da356a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7d1a2592e8ce04d83af53f0187a3321d264e70bf")]
 [assembly: System.Reflection.AssemblyProductAttribute("SEEUConnect.Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SEEUConnect.Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

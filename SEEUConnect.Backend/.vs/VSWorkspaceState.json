@@ -1,0 +1,12 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\SEEUConnect.Backend",
+    "\\SEEUConnect.Backend\\Controllers",
+    "\\SEEUConnect.Backend\\Data",
+    "\\SEEUConnect.Backend\\Migrations",
+    "\\SEEUConnect.Backend\\Models"
+  ],
+  "SelectedNode": "\\SEEUConnect.Backend\\Models\\Event.cs",
+  "PreviewInSolutionExplorer": false
+}
