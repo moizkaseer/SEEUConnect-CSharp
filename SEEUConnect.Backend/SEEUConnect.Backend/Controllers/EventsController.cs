@@ -2,6 +2,7 @@
 using SEEUConnect.Backend.Data;
 using SEEUConnect.Backend.Models;
 using Microsoft.EntityFrameworkCore;
+using SEEUConnect.Backend.Repositories;
 
 namespace SEEUConnect.Backend.Controllers
 {
@@ -9,24 +10,29 @@ namespace SEEUConnect.Backend.Controllers
     [ApiController]
     public class EventsController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        public EventsController(AppDbContext context)
+        private readonly IEventRepository _repository;
+
+        public EventsController(IEventRepository repository)
         {
-            _context = context;
+            _repository = repository;
         }
 
         // GET: api/Events
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Event>>> GetEvents()
+       public async Task<ActionResult<Event>> GetEvents()
         {
-            return await _context.Events.ToListAsync();
+            var events = await _repository.GetAllAsync();
+            return Ok(events);
         }
+    
+       
+
 
         // GET: api/Events/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Event>> GetEvent(int id)
         {
-            var @event = await _context.Events.FindAsync(id);
+            var @event = await _repository.GetByIdAsync(id);
             if (@event == null)
             {
                 return NotFound();
@@ -36,53 +42,34 @@ namespace SEEUConnect.Backend.Controllers
 
         // POST: api/Events
         [HttpPost]
-        public async Task<ActionResult<Event>> PostEvent(Event @event)
+       public async Task<ActionResult<Event>>PostEvent(Event @event)
         {
-            _context.Events.Add(@event);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetEvent), new { id = @event.Id }, @event);
+            var createdEvent = await _repository.CreateAsync(@event);
+            return CreatedAtAction(nameof(GetEvent), new { id = createdEvent.Id }, createdEvent);
         }
 
         // PUT: api/Events/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutEvent(int id, Event @event)
         {
-            if (id != @event.Id)
-            {
-                return BadRequest("Event ID mismatch");
-            }
-
-            _context.Entry(@event).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Events.Any(e => e.Id == id))
-                {
-                    return NotFound();
-                }
-                throw;
-            }
-
+            var update = await _repository.UpdateAsync(id, @event);
+            if (update == null)            {
+                return NotFound();
+            }   
             return NoContent();
         }
+   
 
         // DELETE: api/Events/5
         [HttpDelete("{id}")]
+        
         public async Task<IActionResult> DeleteEvent(int id)
         {
-            var @event = await _context.Events.FindAsync(id);
-            if (@event == null)
+            var deleted = await _repository.DeleteAsync(id);
+            if (!deleted)
             {
                 return NotFound();
             }
-
-            _context.Events.Remove(@event);
-            await _context.SaveChangesAsync();
-
             return NoContent();
         }
 
