@@ -1,0 +1,5 @@
+git reset 
+git add .gitignore
+git add LEARNING_NOTES.md
+git add PROJECT_ASSESSMENT.md
+git add client/.env.development
