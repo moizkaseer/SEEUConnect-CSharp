@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SEEUConnect.Backend.Data;
 using SEEUConnect.Backend.Models;
-using Microsoft.EntityFrameworkCore;
 using SEEUConnect.Backend.Repositories;
 
 namespace SEEUConnect.Backend.Controllers
@@ -19,7 +17,7 @@ namespace SEEUConnect.Backend.Controllers
 
         // GET: api/Events
         [HttpGet]
-       public async Task<ActionResult<Event>> GetEvents()
+        public async Task<ActionResult<IEnumerable<Event>>> GetEvents()
         {
             var events = await _repository.GetAllAsync();
             return Ok(events);
