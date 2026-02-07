@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SEEUConnect.Backend.Models;
-using SEEUConnect.Backend.Repositories;
+using SEEUConnect.Backend.Services;
 
 namespace SEEUConnect.Backend.Controllers
 {
@@ -8,62 +8,67 @@ namespace SEEUConnect.Backend.Controllers
     [ApiController]
     public class EventsController : ControllerBase
     {
-        private readonly IEventRepository _repository;
+        // NOW: Controller depends on Service (not Repository)
+        private readonly IEventService _service;
 
-        public EventsController(IEventRepository repository)
+        public EventsController(IEventService service)
         {
-            _repository = repository;
+            _service = service;
         }
 
         // GET: api/Events
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Event>>> GetEvents()
         {
-            var events = await _repository.GetAllAsync();
+            var events = await _service.GetAllEventsAsync();
             return Ok(events);
         }
-    
-       
-
 
         // GET: api/Events/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Event>> GetEvent(int id)
         {
-            var @event = await _repository.GetByIdAsync(id);
+            var @event = await _service.GetEventByIdAsync(id);
             if (@event == null)
             {
                 return NotFound();
             }
-            return @event;
+            return Ok(@event);
         }
 
         // POST: api/Events
         [HttpPost]
-       public async Task<ActionResult<Event>>PostEvent(Event @event)
+        public async Task<ActionResult<Event>> PostEvent(Event @event)
         {
-            var createdEvent = await _repository.CreateAsync(@event);
-            return CreatedAtAction(nameof(GetEvent), new { id = createdEvent.Id }, createdEvent);
+            try
+            {
+                var created = await _service.CreateEventAsync(@event);
+                return CreatedAtAction(nameof(GetEvent), new { id = created.Id }, created);
+            }
+            catch (ArgumentException ex)
+            {
+                // Service threw a validation error - return 400 Bad Request
+                return BadRequest(ex.Message);
+            }
         }
 
         // PUT: api/Events/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutEvent(int id, Event @event)
         {
-            var update = await _repository.UpdateAsync(id, @event);
-            if (update == null)            {
+            var updated = await _service.UpdateEventAsync(id, @event);
+            if (updated == null)
+            {
                 return NotFound();
-            }   
+            }
             return NoContent();
         }
-   
 
         // DELETE: api/Events/5
         [HttpDelete("{id}")]
-        
         public async Task<IActionResult> DeleteEvent(int id)
         {
-            var deleted = await _repository.DeleteAsync(id);
+            var deleted = await _service.DeleteEventAsync(id);
             if (!deleted)
             {
                 return NotFound();
@@ -71,5 +76,20 @@ namespace SEEUConnect.Backend.Controllers
             return NoContent();
         }
 
+        // GET: api/Events/category/Workshop    ← NEW endpoint!
+        [HttpGet("category/{category}")]
+        public async Task<ActionResult<IEnumerable<Event>>> GetEventsByCategory(string category)
+        {
+            var events = await _service.GetEventsByCategoryAsync(category);
+            return Ok(events);
+        }
+
+        // GET: api/Events/search?term=party    ← NEW endpoint!
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<Event>>> SearchEvents([FromQuery] string term)
+        {
+            var events = await _service.SearchEventsByDateAsync(term);
+            return Ok(events);
+        }
     }
 }

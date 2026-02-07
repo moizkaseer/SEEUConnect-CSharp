@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SEEUConnect.Backend.Data;
 using SEEUConnect.Backend.Repositories;
+using SEEUConnect.Backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +14,8 @@ builder.Services.AddSwaggerGen();
 
 //so here we are using this to tell the app to use the sql server database with the connection string from appsettings.json
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<IEventService, EventService>(); // Add the service to the DI container
 builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
