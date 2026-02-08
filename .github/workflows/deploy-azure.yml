@@ -1,0 +1,139 @@
+# Deploy SEEUConnect to Azure App Service + Azure SQL Database
+#
+# PREREQUISITES (one-time setup in Azure Portal):
+# 1. Create a Resource Group
+# 2. Create an Azure SQL Server + Database
+# 3. Create an Azure App Service (Linux, .NET 10)
+# 4. Create an Azure Static Web App (for frontend)
+# 5. Configure GitHub Secrets (see DEPLOYMENT.md)
+
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  AZURE_WEBAPP_NAME: seeuconnect-api       # Your Azure App Service name
+  AZURE_WEBAPP_PACKAGE_PATH: './publish'
+  DOTNET_VERSION: '10.0.x'
+  NODE_VERSION: '20'
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1: Build and publish the .NET backend
+  # ─────────────────────────────────────────────
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: ./SEEUConnect.Backend/SEEUConnect.Backend
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+        working-directory: ./SEEUConnect.Backend/SEEUConnect.Backend
+
+      - name: Publish
+        run: dotnet publish --no-build --configuration Release --output ./publish
+        working-directory: ./SEEUConnect.Backend/SEEUConnect.Backend
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-publish
+          path: ./SEEUConnect.Backend/SEEUConnect.Backend/publish
+
+  # ─────────────────────────────────────────────
+  # Job 2: Build the React frontend
+  # ─────────────────────────────────────────────
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./client
+
+      - name: Build (with production API URL)
+        run: npm run build
+        working-directory: ./client
+        env:
+          VITE_API_URL: ${{ secrets.AZURE_API_URL }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: ./client/dist
+
+  # ─────────────────────────────────────────────
+  # Job 3: Deploy backend to Azure App Service
+  # ─────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend to Azure
+    needs: build-backend
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-publish
+          path: ./publish
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
+
+  # ─────────────────────────────────────────────
+  # Job 4: Deploy frontend to Azure Static Web Apps
+  # ─────────────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend to Azure
+    needs: build-frontend
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ./client/dist
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "./client/dist"
+          skip_app_build: true

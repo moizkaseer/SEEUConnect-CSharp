@@ -1,0 +1,120 @@
+# Deploy SEEUConnect to Google Cloud Run + Cloud SQL
+#
+# PREREQUISITES (one-time setup):
+# 1. Create a GCP project
+# 2. Enable Cloud Run, Cloud SQL, Artifact Registry, Cloud Build APIs
+# 3. Create a Cloud SQL (SQL Server) instance + database
+# 4. Create an Artifact Registry Docker repository
+# 5. Create a Service Account with required roles
+# 6. Configure GitHub Secrets (see DEPLOYMENT.md)
+
+name: Deploy to Google Cloud
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_REGION: us-central1
+  BACKEND_SERVICE_NAME: seeuconnect-api
+  FRONTEND_BUCKET: seeuconnect-frontend
+  ARTIFACT_REGISTRY: us-central1-docker.pkg.dev
+  REPOSITORY: seeuconnect
+  NODE_VERSION: '20'
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1: Build and push Docker image for backend
+  # ─────────────────────────────────────────────
+  build-and-deploy-backend:
+    name: Build & Deploy Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }} --quiet
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_SERVICE_NAME }}:${{ github.sha }} \
+            -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_SERVICE_NAME }}:latest \
+            -f SEEUConnect.Backend/SEEUConnect.Backend/Dockerfile \
+            ./SEEUConnect.Backend
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_SERVICE_NAME }}:${{ github.sha }}
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_SERVICE_NAME }}:latest
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.BACKEND_SERVICE_NAME }}
+          region: ${{ env.GCP_REGION }}
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.BACKEND_SERVICE_NAME }}:${{ github.sha }}
+          flags: |
+            --allow-unauthenticated
+            --port=8080
+            --memory=512Mi
+            --cpu=1
+            --min-instances=0
+            --max-instances=3
+            --set-env-vars=ASPNETCORE_ENVIRONMENT=Production
+            --set-secrets=ConnectionStrings__DefaultConnection=DB_CONNECTION_STRING:latest,Jwt__Key=JWT_SECRET_KEY:latest
+
+  # ─────────────────────────────────────────────
+  # Job 2: Build and deploy frontend to Cloud Storage
+  # ─────────────────────────────────────────────
+  build-and-deploy-frontend:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./client
+
+      - name: Build (with production API URL)
+        run: npm run build
+        working-directory: ./client
+        env:
+          VITE_API_URL: ${{ secrets.GCP_API_URL }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Storage
+        run: |
+          gsutil -m rsync -r -d ./client/dist gs://${{ env.FRONTEND_BUCKET }}
+
+      - name: Set cache headers
+        run: |
+          gsutil -m setmeta -h "Cache-Control:public, max-age=31536000" gs://${{ env.FRONTEND_BUCKET }}/assets/**
+          gsutil -m setmeta -h "Cache-Control:no-cache" gs://${{ env.FRONTEND_BUCKET }}/index.html

@@ -1,19 +1,94 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+# Azure DevOps Pipeline for SEEUConnect
+# Alternative to GitHub Actions if using Azure DevOps
 
 trigger:
-- master
+  - master
+  - main
 
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
+  dotnetVersion: '10.0.x'
+  nodeVersion: '20'
+  buildConfiguration: 'Release'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+stages:
+  # ─────────────────────────────────────────
+  # Stage 1: Build
+  # ─────────────────────────────────────────
+  - stage: Build
+    displayName: 'Build Backend & Frontend'
+    jobs:
+      - job: BuildBackend
+        displayName: 'Build .NET Backend'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK'
+            inputs:
+              packageType: 'sdk'
+              version: '$(dotnetVersion)'
+
+          - script: dotnet restore
+            displayName: 'Restore NuGet packages'
+            workingDirectory: ./SEEUConnect.Backend/SEEUConnect.Backend
+
+          - script: dotnet build --no-restore --configuration $(buildConfiguration)
+            displayName: 'Build project'
+            workingDirectory: ./SEEUConnect.Backend/SEEUConnect.Backend
+
+          - script: dotnet publish --no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/backend
+            displayName: 'Publish project'
+            workingDirectory: ./SEEUConnect.Backend/SEEUConnect.Backend
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Upload backend artifact'
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/backend'
+              ArtifactName: 'backend'
+
+      - job: BuildFrontend
+        displayName: 'Build React Frontend'
+        steps:
+          - task: NodeTool@0
+            displayName: 'Install Node.js'
+            inputs:
+              versionSpec: '$(nodeVersion)'
+
+          - script: npm ci
+            displayName: 'Install npm packages'
+            workingDirectory: ./client
+
+          - script: npm run build
+            displayName: 'Build React app'
+            workingDirectory: ./client
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Upload frontend artifact'
+            inputs:
+              PathtoPublish: 'client/dist'
+              ArtifactName: 'frontend'
+
+  # ─────────────────────────────────────────
+  # Stage 2: Deploy to Azure
+  # ─────────────────────────────────────────
+  - stage: Deploy
+    displayName: 'Deploy to Azure'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployBackend
+        displayName: 'Deploy API to Azure App Service'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to Azure App Service'
+                  inputs:
+                    azureSubscription: '$(AzureSubscription)'
+                    appType: 'webAppLinux'
+                    appName: '$(AzureWebAppName)'
+                    package: '$(Pipeline.Workspace)/backend'
+                    runtimeStack: 'DOTNETCORE|10.0'
