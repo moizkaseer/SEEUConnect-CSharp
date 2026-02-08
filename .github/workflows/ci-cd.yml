@@ -1,55 +1,58 @@
 # CI/CD Pipeline for SEEUConnect
-# This workflow runs automatically when you push code to GitHub
+# Builds, tests, and deploys to Azure using Student Subscription
+#
+# ┌─────────┐     ┌──────────┐     ┌──────────────────┐
+# │  Push   │────▶│  Build   │────▶│  Deploy to Azure │
+# │ to main │     │ & Test   │     │  (App Service)   │
+# └─────────┘     └──────────┘     └──────────────────┘
 
 name: SEEUConnect CI/CD
 
-# WHEN does this run?
 on:
   push:
-    branches: [ master, main ]    # Runs when you push to master or main
+    branches: [ master, main ]
   pull_request:
-    branches: [ master, main ]    # Runs when you create a pull request
+    branches: [ master, main ]
+  workflow_dispatch:  # Allows manual trigger from GitHub Actions tab
 
 jobs:
-  # JOB 1: Build and Test the Backend
+  # ═══════════════════════════════════════════════
+  # JOB 1: Build and Test the .NET Backend
+  # ═══════════════════════════════════════════════
   build-backend:
     name: Build & Test Backend
-    runs-on: ubuntu-latest        # Runs on a Linux server (GitHub provides this free)
+    runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Download your code from GitHub
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Install .NET SDK
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      # Step 3: Restore NuGet packages (like npm install for .NET)
       - name: Restore dependencies
         run: dotnet restore
         working-directory: ./SEEUConnect.Backend/SEEUConnect.Backend
 
-      # Step 4: Build the project
       - name: Build
         run: dotnet build --no-restore --configuration Release
         working-directory: ./SEEUConnect.Backend/SEEUConnect.Backend
 
-      # Step 5: Publish (create deployment-ready files)
       - name: Publish
         run: dotnet publish --no-build --configuration Release --output ./publish
         working-directory: ./SEEUConnect.Backend/SEEUConnect.Backend
 
-      # Step 6: Upload the published files as an artifact (for deployment)
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-publish
           path: ./SEEUConnect.Backend/SEEUConnect.Backend/publish
 
-  # JOB 2: Build the Frontend
+  # ═══════════════════════════════════════════════
+  # JOB 2: Build the React Frontend
+  # ═══════════════════════════════════════════════
   build-frontend:
     name: Build Frontend
     runs-on: ubuntu-latest
@@ -58,44 +61,75 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # Install npm packages
       - name: Install dependencies
         run: npm ci
         working-directory: ./client
 
-      # Build the React app
       - name: Build
         run: npm run build
         working-directory: ./client
+        env:
+          VITE_API_URL: ${{ secrets.AZURE_API_URL }}
 
-      # Upload frontend build
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: ./client/dist
-  # JOB 3: Deploy to Azure (disabled - SEEU Azure policy blocks deployment)
-  # Uncomment when Azure credentials are available
-  # deploy:
-  #   name: Deploy to Azure
-  #   needs: [build-backend, build-frontend]
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'push'
-  #   steps:
-  #     - name: Download backend artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: backend-publish
-  #         path: ./publish
-  #     - name: Deploy to Azure Web App
-  #       uses: azure/webapps-deploy@v3
-  #       with:
-  #         app-name: 'seeuconnect-api'
-  #         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-  #         package: ./publish
+
+  # ═══════════════════════════════════════════════
+  # JOB 3: Deploy Backend to Azure App Service
+  # Uses your Student Subscription
+  # ═══════════════════════════════════════════════
+  deploy-backend:
+    name: Deploy API to Azure
+    needs: [build-backend]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-publish
+          path: ./publish
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
+
+  # ═══════════════════════════════════════════════
+  # JOB 4: Deploy Frontend to Azure Static Web Apps
+  # ═══════════════════════════════════════════════
+  deploy-frontend:
+    name: Deploy Frontend to Azure
+    needs: [build-frontend]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ./client/dist
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "./client/dist"
+          skip_app_build: true
