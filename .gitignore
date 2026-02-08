@@ -1,5 +1,23 @@
-git reset 
-git add .gitignore
-git add LEARNING_NOTES.md
-git add PROJECT_ASSESSMENT.md
-git add client/.env.development
+# Build outputs
+bin/
+obj/
+publish/
+dist/
+
+# IDE
+.vs/
+*.suo
+*.user
+
+# Environment secrets
+publish-profile.xml
+*.PublishSettings
+appsettings.Production.json
+
+# Node
+node_modules/
+
+# OS files
+nul
+Thumbs.db
+.DS_Store

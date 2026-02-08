@@ -42,35 +42,42 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// CORS - allow frontend to send requests
+// CORS - allow frontend to send requests (needed for local dev; in production frontend is served from same origin)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAllOrigins",
-        builder =>
+        policy =>
         {
-            builder.AllowAnyOrigin()
-                   .AllowAnyMethod()
-                   .AllowAnyHeader();
+            policy.WithOrigins("http://localhost:8081")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
         });
 });
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI();
+
+if (!app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseHttpsRedirection(); // Enable HTTPS redirect in production (Azure provides SSL)
 }
 
-// app.UseHttpsRedirection(); // Disabled: causes issues when frontend uses HTTP
-
 app.UseCors("AllowAllOrigins");
+
+// Serve the React frontend as static files (wwwroot folder)
+app.UseDefaultFiles();     // Serves index.html by default
+app.UseStaticFiles();      // Serves CSS, JS, images from wwwroot
 
 // IMPORTANT: Authentication MUST come before Authorization!
 app.UseAuthentication();   // "Who are you?" (reads the JWT token)
 app.UseAuthorization();    // "Are you allowed?" (checks roles/policies)
 
 app.MapControllers();
+
+// SPA fallback: any route not matching an API endpoint or static file serves index.html
+app.MapFallbackToFile("index.html");
 
 app.Run();
