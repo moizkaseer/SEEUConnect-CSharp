@@ -1,0 +1,103 @@
+# CI/CD Pipeline for SEEUConnect
+# This workflow runs automatically when you push code to GitHub
+
+name: SEEUConnect CI/CD
+
+# WHEN does this run?
+on:
+  push:
+    branches: [ master, main ]    # Runs when you push to master or main
+  pull_request:
+    branches: [ master, main ]    # Runs when you create a pull request
+
+jobs:
+  # JOB 1: Build and Test the Backend
+  build-backend:
+    name: Build & Test Backend
+    runs-on: ubuntu-latest        # Runs on a Linux server (GitHub provides this free)
+
+    steps:
+      # Step 1: Download your code from GitHub
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install .NET SDK
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Step 3: Restore NuGet packages (like npm install for .NET)
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: ./SEEUConnect.Backend/SEEUConnect.Backend
+
+      # Step 4: Build the project
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+        working-directory: ./SEEUConnect.Backend/SEEUConnect.Backend
+
+      # Step 5: Publish (create deployment-ready files)
+      - name: Publish
+        run: dotnet publish --no-build --configuration Release --output ./publish
+        working-directory: ./SEEUConnect.Backend/SEEUConnect.Backend
+
+      # Step 6: Upload the published files as an artifact (for deployment)
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-publish
+          path: ./SEEUConnect.Backend/SEEUConnect.Backend/publish
+
+  # JOB 2: Build the Frontend
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Install npm packages
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./client
+
+      # Build the React app
+      - name: Build
+        run: npm run build
+        working-directory: ./client
+
+      # Upload frontend build
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: ./client/dist
+
+  # JOB 3: Deploy to Azure (only runs on push to master, not on PRs)
+  deploy:
+    name: Deploy to Azure
+    needs: [build-backend, build-frontend]   # Wait for both builds to succeed
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'          # Only deploy on push, not PRs
+
+    steps:
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-publish
+          path: ./publish
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'seeuconnect-api'        # Your Azure app name (we'll create this)
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
