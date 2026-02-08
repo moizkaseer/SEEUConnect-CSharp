@@ -80,24 +80,22 @@ jobs:
         with:
           name: frontend-build
           path: ./client/dist
-
-  # JOB 3: Deploy to Azure (only runs on push to master, not on PRs)
-  deploy:
-    name: Deploy to Azure
-    needs: [build-backend, build-frontend]   # Wait for both builds to succeed
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'          # Only deploy on push, not PRs
-
-    steps:
-      - name: Download backend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-publish
-          path: ./publish
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'seeuconnect-api'        # Your Azure app name (we'll create this)
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./publish
+  # JOB 3: Deploy to Azure (disabled - SEEU Azure policy blocks deployment)
+  # Uncomment when Azure credentials are available
+  # deploy:
+  #   name: Deploy to Azure
+  #   needs: [build-backend, build-frontend]
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push'
+  #   steps:
+  #     - name: Download backend artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: backend-publish
+  #         path: ./publish
+  #     - name: Deploy to Azure Web App
+  #       uses: azure/webapps-deploy@v3
+  #       with:
+  #         app-name: 'seeuconnect-api'
+  #         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+  #         package: ./publish
