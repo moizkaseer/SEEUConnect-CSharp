@@ -57,7 +57,6 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-app.UseDeveloperExceptionPage(); // Show detailed errors (temporary for debugging)
 app.UseSwagger();
 app.UseSwaggerUI();
 
