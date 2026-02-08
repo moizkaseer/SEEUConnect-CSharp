@@ -23,5 +23,13 @@ namespace SEEUConnect.Backend.Models
         public string Tags { get; set; } = string.Empty;
 
         public int Votes { get; set; } = 0;
+
+
+        //navigation property - one Event has many Comments
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+        //Navigation property -Many-to-Many relationship with Tag via EventTag
+
+        public ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
     }
 }
