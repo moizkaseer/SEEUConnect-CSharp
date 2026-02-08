@@ -6,7 +6,17 @@
       "Bash(curl:*)",
       "Bash(npm run dev:*)",
       "Bash(git rebase:*)",
-      "Bash(GIT_EDITOR=true git rebase:*)"
+      "Bash(GIT_EDITOR=true git rebase:*)",
+      "Bash(git remote get-url:*)",
+      "Bash(winget list:*)",
+      "Bash(export PATH=\"/c/Program Files/GitHub CLI:$PATH\")",
+      "Bash(gh run view:*)",
+      "Bash(gh run rerun:*)",
+      "Bash(gh run watch:*)",
+      "Bash(dotnet ef migrations:*)",
+      "Bash(dotnet ef database update:*)",
+      "Bash(python3:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

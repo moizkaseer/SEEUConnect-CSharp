@@ -162,3 +162,10 @@ D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\Sw
 D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\BCrypt.Net-Next.dll
 D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\publish\web.config
+D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\appsettings.Production.json
+D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\publish\appsettings.Development.json
+D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\publish\appsettings.json
+D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\publish\SEEUConnect.Backend.deps.json
+D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\publish\SEEUConnect.Backend.runtimeconfig.json
+D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\publish\SEEUConnect.Backend.staticwebassets.endpoints.json
