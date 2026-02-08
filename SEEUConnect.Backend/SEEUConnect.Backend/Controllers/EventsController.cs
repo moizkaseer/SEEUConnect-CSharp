@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEEUConnect.Backend.Models;
 using SEEUConnect.Backend.Services;
 
@@ -36,7 +37,8 @@ namespace SEEUConnect.Backend.Controllers
             return Ok(@event);
         }
 
-        // POST: api/Events
+        // POST: api/Events - Only logged-in users can create events
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<Event>> PostEvent(Event @event)
         {
@@ -52,7 +54,8 @@ namespace SEEUConnect.Backend.Controllers
             }
         }
 
-        // PUT: api/Events/5
+        // PUT: api/Events/5 - Only logged-in users can update events
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutEvent(int id, Event @event)
         {
@@ -64,7 +67,8 @@ namespace SEEUConnect.Backend.Controllers
             return NoContent();
         }
 
-        // DELETE: api/Events/5
+        // DELETE: api/Events/5 - Only Admins can delete events
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteEvent(int id)
         {

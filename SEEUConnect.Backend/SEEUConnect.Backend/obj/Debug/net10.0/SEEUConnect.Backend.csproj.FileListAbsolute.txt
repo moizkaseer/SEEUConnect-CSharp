@@ -160,3 +160,5 @@ D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\obj\Debug\net10.0\re
 D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagger.dll
 D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
 D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\BCrypt.Net-Next.dll
+D:\.Net\SEEUConnect\SEEUConnect.Backend\SEEUConnect.Backend\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
