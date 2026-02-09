@@ -76,6 +76,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Auto-apply pending database migrations on startup (creates any new tables like ChatMessages)
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    context.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
