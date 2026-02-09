@@ -4,6 +4,7 @@ import { MessageCircle, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import API_CONFIG from '@/config/api';
 
 interface ChatMessage {
@@ -62,7 +63,7 @@ const ChatSidebar = () => {
         accessTokenFactory: () => user.token,
       })
       .withAutomaticReconnect()
-      .configureLogging(LogLevel.Warning)
+      .configureLogging(LogLevel.Information)
       .build();
 
     // Listen for incoming messages
@@ -70,17 +71,31 @@ const ChatSidebar = () => {
       setMessages(prev => [...prev, message]);
     });
 
-    newConnection.onclose(() => setIsConnected(false));
-    newConnection.onreconnected(() => setIsConnected(true));
+    newConnection.onclose((err) => {
+      console.error('SignalR connection closed:', err);
+      setIsConnected(false);
+    });
+    newConnection.onreconnecting(() => {
+      console.log('SignalR reconnecting...');
+      setIsConnected(false);
+    });
+    newConnection.onreconnected(() => {
+      console.log('SignalR reconnected');
+      setIsConnected(true);
+    });
 
     // Start connection
     newConnection
       .start()
       .then(() => {
+        console.log('SignalR connected successfully');
         setIsConnected(true);
         setConnection(newConnection);
       })
-      .catch(err => console.error('SignalR connection failed:', err));
+      .catch(err => {
+        console.error('SignalR connection failed:', err);
+        toast.error('Failed to connect to chat. Please try again.');
+      });
 
     return () => {
       newConnection.stop();
@@ -93,8 +108,9 @@ const ChatSidebar = () => {
     try {
       await connection.invoke('SendMessage', newMessage.trim());
       setNewMessage('');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to send message:', err);
+      toast.error(err?.message || 'Failed to send message');
     }
   };
 

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using SEEUConnect.Backend.Data;
@@ -6,6 +7,7 @@ using System.Security.Claims;
 
 namespace SEEUConnect.Backend.Hubs
 {
+    [Authorize]
     public class ChatHub : Hub
     {
         private readonly AppDbContext _context;
