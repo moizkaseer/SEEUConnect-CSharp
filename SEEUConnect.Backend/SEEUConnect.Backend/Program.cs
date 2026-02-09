@@ -5,6 +5,7 @@ using System.Text;
 using SEEUConnect.Backend.Data;
 using SEEUConnect.Backend.Repositories;
 using SEEUConnect.Backend.Services;
+using SEEUConnect.Backend.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Dependency Injection - Repository and Service
 builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IEventService, EventService>();
+
+// Add SignalR for real-time chat
+builder.Services.AddSignalR();
 
 // JWT Authentication configuration
 builder.Services.AddAuthentication(options =>
@@ -40,6 +44,21 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
+
+    // SignalR sends JWT token via query string (not headers), so we need to read it from there
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chathub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // CORS - allow frontend to send requests (needed for local dev; in production frontend is served from same origin)
@@ -50,7 +69,8 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins("http://localhost:8081")
                   .AllowAnyMethod()
-                  .AllowAnyHeader();
+                  .AllowAnyHeader()
+                  .AllowCredentials(); // Required for SignalR
         });
 });
 
@@ -76,6 +96,9 @@ app.UseAuthentication();   // "Who are you?" (reads the JWT token)
 app.UseAuthorization();    // "Are you allowed?" (checks roles/policies)
 
 app.MapControllers();
+
+// Map SignalR hub for real-time chat
+app.MapHub<ChatHub>("/chathub");
 
 // SPA fallback: any route not matching an API endpoint or static file serves index.html
 app.MapFallbackToFile("index.html");

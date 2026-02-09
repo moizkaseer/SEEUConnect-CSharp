@@ -16,6 +16,7 @@ namespace SEEUConnect.Backend.Data
         public DbSet<Comment> Comments { get; set; } // this will create a table named Comments in the database
         public DbSet<EventTag> EventTags { get; set; } // this will create a table named EventTags in the database
         public DbSet<Event> Events { get; set; } // this will create a table named Events in the database
+        public DbSet<ChatMessage> ChatMessages { get; set; } // this will create a table named ChatMessages in the database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
