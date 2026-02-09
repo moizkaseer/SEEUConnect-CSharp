@@ -22,6 +22,11 @@ export const API_CONFIG={
 
   USERS:{
     SUBSCRIBE:`${API_BASE_URL}/api/users/subscribe`,
+  },
+
+  CHAT:{
+    HUB_URL:`${API_BASE_URL}/chathub`,
+    GET_MESSAGES:`${API_BASE_URL}/api/chat/messages`,
   }
 };
 

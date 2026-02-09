@@ -22,5 +22,8 @@ namespace SEEUConnect.Backend.Models
 
         // Navigation property - One User has Many Comments
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+        // Navigation property - One User has Many ChatMessages
+        public ICollection<ChatMessage> ChatMessages { get; set; } = new List<ChatMessage>();
     }
 }

@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import EventCard from '@/components/EventCard';
 import FilterTabs from '@/components/FilterTabs';
 import SubmitModal from '@/components/SubmitModal';
+import ChatSidebar from '@/components/ChatSidebar';
 import { Input } from '@/components/ui/input';
 import { Search, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -191,10 +192,13 @@ const Index = () => {
         }}
       />
 
+      {/* Chat Sidebar */}
+      <ChatSidebar />
+
       {/* Floating Subscribe Button */}
       <Button
         onClick={() => setIsSubscribeOpen(true)}
-        className="fixed bottom-6 right-6 z-50 bg-campus-purple hover:bg-campus-lightPurple shadow-lg flex items-center"
+        className="fixed bottom-6 left-6 z-50 bg-campus-purple hover:bg-campus-lightPurple shadow-lg flex items-center"
         style={{ borderRadius: '9999px', padding: '0.75rem 1.5rem' }}
       >
         <Mail size={20} className="mr-2" />
