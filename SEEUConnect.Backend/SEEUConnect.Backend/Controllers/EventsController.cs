@@ -95,5 +95,24 @@ namespace SEEUConnect.Backend.Controllers
             var events = await _service.SearchEventsByDateAsync(term);
             return Ok(events);
         }
+
+        // POST: api/Events/5/vote - Vote on an event (increment or decrement)
+        [Authorize]
+        [HttpPost("{id}/vote")]
+        public async Task<IActionResult> VoteEvent(int id, [FromBody] VoteRequest request)
+        {
+            var ev = await _service.GetEventByIdAsync(id);
+            if (ev == null) return NotFound();
+
+            ev.Votes = request.Vote ? ev.Votes + 1 : Math.Max(0, ev.Votes - 1);
+            await _service.UpdateEventAsync(id, ev);
+
+            return Ok(new { votes = ev.Votes });
+        }
+    }
+
+    public class VoteRequest
+    {
+        public bool Vote { get; set; }
     }
 }

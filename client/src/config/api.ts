@@ -1,6 +1,6 @@
 //Api configuration - Centralized API URL management
 
-//Get API URL from environment variables or use default 
+//Get API URL from environment variables or use default
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5056';
 
@@ -13,6 +13,7 @@ export const API_CONFIG={
     CREATE:`${API_BASE_URL}/api/events`,
     UPDATE_EVENT:(id:string)=>`${API_BASE_URL}/api/events/${id}`,
     DELETE_EVENT:(id:string)=>`${API_BASE_URL}/api/events/${id}`,
+    VOTE:(id:number)=>`${API_BASE_URL}/api/events/${id}/vote`,
   },
 
   AUTH:{
@@ -22,6 +23,11 @@ export const API_CONFIG={
 
   USERS:{
     SUBSCRIBE:`${API_BASE_URL}/api/users/subscribe`,
+  },
+
+  COMMENTS:{
+    GET_BY_EVENT:(eventId:number)=>`${API_BASE_URL}/api/comments/event/${eventId}`,
+    CREATE:`${API_BASE_URL}/api/comments`,
   },
 
   CHAT:{
